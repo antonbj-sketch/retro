@@ -76,10 +76,12 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
   const spawnEntity = (timestamp: number) => {
     const timeSinceSpawn = timestamp - lastSpawnRef.current;
     // Spawn rate decreases as speed increases (harder)
-    const currentSpawnRate = Math.max(400, SPAWN_RATE_MS - (speedRef.current * 200)); 
+    const currentSpawnRate = Math.max(350, SPAWN_RATE_MS - (speedRef.current * 180)); 
 
     if (timeSinceSpawn > currentSpawnRate) {
       const lane = Math.floor(Math.random() * LANE_COUNT);
+      // Ensure we don't spawn in the same lane 3 times in a row quickly (simple heuristic)
+      
       const isRival = Math.random() > 0.7; // 30% chance for rival
       
       let newEntity: GameObject;
@@ -91,8 +93,8 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
           id,
           type: EntityType.RIVAL,
           lane,
-          y: -10, // Start just above screen
-          speed: 0.5 + (Math.random() * 0.3), // Rivals move slower than the scrolling track usually
+          y: -15, // Start further up
+          speed: 0.5 + (Math.random() * 0.4), // Rivals move slower than the scrolling track usually
           name: rivalConfig.name,
           color: rivalConfig.color,
           era: rivalConfig.era
@@ -130,7 +132,7 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
         const objBottom = obj.y + 10;
         const objTop = obj.y;
 
-        if (objBottom > playerRect.t + 2 && objTop < playerRect.b - 2) { // +2/-2 for lenient hitboxes
+        if (objBottom > playerRect.t + 3 && objTop < playerRect.b - 3) { // +3/-3 for lenient hitboxes
           return obj;
         }
       }
@@ -146,8 +148,8 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
     lastTimeRef.current = time;
 
     // 1. Update Speed & Score
-    speedRef.current += 0.0005; // Gradual acceleration
-    scoreRef.current += (speedRef.current * 0.5); // Score based on distance/speed
+    speedRef.current += 0.0006; // Gradual acceleration
+    scoreRef.current += (speedRef.current * 0.6); // Score based on distance/speed
 
     // 2. Spawn Logic
     spawnEntity(time);
@@ -171,7 +173,7 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
       return; 
     }
 
-    // 5. Update React State for Render (throttling can happen here if needed, but modern React handles 60fps okay-ish for simple DOM)
+    // 5. Update React State for Render
     setGameObjects([...objectsRef.current]);
     setScore(Math.floor(scoreRef.current));
     setSpeed(speedRef.current);
@@ -180,18 +182,19 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-slate-900 border-x-4 border-pink-600 shadow-[0_0_20px_rgba(236,72,153,0.5)] max-w-lg mx-auto rounded-lg">
+    <div className="relative w-full h-full overflow-hidden bg-slate-900 border-x-4 border-pink-900 shadow-[0_0_20px_rgba(236,72,153,0.5)] max-w-lg mx-auto rounded-lg">
       
       {/* Moving Track Effect */}
       <div className="absolute inset-0 opacity-20 pointer-events-none flex">
-        <div className={`w-1/3 border-r border-slate-700 h-full `}></div>
-        <div className={`w-1/3 border-r border-slate-700 h-full `}></div>
+        <div className={`w-1/3 border-r border-slate-700 h-full bg-gradient-to-b from-black to-slate-800`}></div>
+        <div className={`w-1/3 border-r border-slate-700 h-full bg-gradient-to-b from-black to-slate-800`}></div>
+        <div className={`w-1/3 h-full bg-gradient-to-b from-black to-slate-800`}></div>
       </div>
       
       {/* Road Markings (Animated via CSS for smoothness) */}
       <div className="absolute inset-0 pointer-events-none flex justify-around">
-         <div className="h-full w-2 bg-transparent border-l-2 border-dashed border-slate-600 animate-scroll-track" style={{ animationDuration: `${2/speed}s` }}></div>
-         <div className="h-full w-2 bg-transparent border-l-2 border-dashed border-slate-600 animate-scroll-track" style={{ animationDuration: `${2/speed}s` }}></div>
+         <div className="h-full w-2 bg-transparent border-l-2 border-dashed border-slate-500 animate-scroll-track" style={{ animationDuration: `${2/speed}s` }}></div>
+         <div className="h-full w-2 bg-transparent border-l-2 border-dashed border-slate-500 animate-scroll-track" style={{ animationDuration: `${2/speed}s` }}></div>
       </div>
 
       <style>{`
@@ -223,7 +226,7 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
               </div>
             ) : (
               <div className={`w-10/12 h-full rounded-md shadow-lg flex flex-col items-center justify-center text-xs font-bold text-white relative border-2 border-black ${obj.color}`}>
-                <div className="absolute -top-4 bg-black px-1 text-[8px] rounded whitespace-nowrap border border-white">{obj.name}</div>
+                <div className="absolute -top-4 bg-black px-1 text-[8px] rounded whitespace-nowrap border border-white z-20">{obj.name}</div>
                 <div className="w-full h-1/2 bg-black/20 mb-1"></div> {/* Windshield */}
                 <div className="flex w-full justify-between px-1">
                    <div className="w-1 h-2 bg-red-500 rounded-full animate-pulse"></div>
@@ -235,7 +238,7 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
         </div>
       ))}
 
-      {/* Player (Anton) */}
+      {/* Player (Anton - Villain Car) */}
       <div
         className="absolute transition-all duration-100 ease-out"
         style={{
@@ -246,24 +249,39 @@ const GameLoop: React.FC<GameLoopProps> = ({ onGameOver, gameState }) => {
         }}
       >
         <div className="w-full h-full flex items-center justify-center p-2 relative">
-           {/* Anton's Car */}
-           <div className="w-10/12 h-full bg-gradient-to-b from-purple-600 to-pink-600 rounded-t-lg rounded-b-md shadow-[0_0_15px_#ec4899] border-2 border-cyan-400 z-10 relative">
-              <div className="w-full h-2 bg-cyan-300 shadow-[0_0_10px_cyan] mt-1"></div> {/* Headlights */}
-              <div className="w-8/12 mx-auto h-1/3 bg-black/60 mt-2 border border-purple-400 skew-x-12"></div> {/* Windshield */}
-              <div className="absolute -right-2 top-4 w-1 h-6 bg-cyan-400"></div> {/* Side pipes */}
-              <div className="absolute -left-2 top-4 w-1 h-6 bg-cyan-400"></div>
+           {/* Anton's Car - More Villainous */}
+           <div className="w-11/12 h-full bg-gradient-to-b from-gray-900 to-black rounded-t-lg rounded-b-md shadow-[0_0_20px_#7e22ce] border-2 border-purple-500 z-10 relative">
+              {/* Spikes on side */}
+              <div className="absolute -left-1 top-2 w-1 h-4 bg-gray-400 skew-y-12"></div>
+              <div className="absolute -right-1 top-2 w-1 h-4 bg-gray-400 -skew-y-12"></div>
+              
+              {/* Hood Decal - Skull */}
+              <div className="absolute top-1 left-1/2 -translate-x-1/2 text-[10px] opacity-70">💀</div>
+
+              {/* Headlights (Menacing Red/Purple) */}
+              <div className="w-full h-1 flex justify-between px-1 mt-1">
+                  <div className="w-2 h-2 bg-red-500 shadow-[0_0_8px_#ef4444] rounded-full"></div>
+                  <div className="w-2 h-2 bg-red-500 shadow-[0_0_8px_#ef4444] rounded-full"></div>
+              </div>
+              
+              {/* Windshield */}
+              <div className="w-9/12 mx-auto h-1/3 bg-purple-900/80 mt-1 border-x border-t border-purple-400/50 skew-x-0 rounded-sm"></div> 
+              
+              {/* Spoiler */}
+              <div className="absolute -bottom-1 w-full h-2 bg-black border-t border-purple-600"></div>
            </div>
            
-           {/* Exhaust Flame */}
-           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-4 h-6 bg-orange-500 blur-sm rounded-full animate-pulse z-0 translate-y-2"></div>
+           {/* Exhaust Flame (Blue/Pink) */}
+           <div className="absolute bottom-0 left-1/3 -translate-x-1/2 w-3 h-8 bg-cyan-500 blur-sm rounded-full animate-pulse z-0 translate-y-3 opacity-90"></div>
+           <div className="absolute bottom-0 right-1/3 translate-x-1/2 w-3 h-8 bg-cyan-500 blur-sm rounded-full animate-pulse z-0 translate-y-3 opacity-90"></div>
         </div>
       </div>
 
       {/* HUD */}
       <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
-        <div className="bg-black/70 border border-purple-500 p-2 rounded text-green-400 font-mono text-sm">
-          <div>SCORE: {score.toString().padStart(6, '0')}</div>
-          <div className="text-xs text-pink-500 mt-1">SPEED: {Math.floor(speed * 100)} MPH</div>
+        <div className="bg-black/80 border-2 border-purple-600 p-2 rounded transform -skew-x-12 shadow-[5px_5px_0_rgba(0,0,0,0.5)]">
+          <div className="text-green-400 font-mono text-sm font-bold tracking-widest">SCORE: {score.toString().padStart(6, '0')}</div>
+          <div className="text-xs text-pink-500 mt-1 font-bold">SPEED: {Math.floor(speed * 120)} KM/H</div>
         </div>
       </div>
       

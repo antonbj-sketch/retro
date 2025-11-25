@@ -19,6 +19,15 @@ export const OBSTACLES = [
   { name: "Rubik's Cube", icon: "🧊" },
   { name: "Laser Grid", icon: "⚡" },
   { name: "VHS Tape", icon: "📼" },
-  { name: "Banana Peel", icon: "🍌" }, // Classic
+  { name: "Banana Peel", icon: "🍌" }, 
   { name: "Time Vortex", icon: "🌀" },
+  { name: "Giant 8-Ball", icon: "🎱" },
+  { name: "Pizza Rat", icon: "🐀" },
+  { name: "Wet Floor Sign", icon: "⚠️" },
+  { name: "Keytar", icon: "🎹" },
+  { name: "Floppy Disk", icon: "💾" },
+  { name: "Arcade Cabinet", icon: "🕹️" },
+  { name: "Neon Palm", icon: "🌴" },
+  { name: "Boombox", icon: "📻" },
+  { name: "Roller Skate", icon: "🛼" },
 ];
